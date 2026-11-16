@@ -11,8 +11,18 @@ import java.util.Scanner;
 import java.io.File;
 import java.io.PrintWriter;
 
+/**
+ * Simulates a console-based Blackjack game featuring betting,
+ * save/load state persistence, and game statistics tracking.
+ */
 public class Blackjack {
 
+    /**
+     * Entry point of the Blackjack application. Manages the main game loop,
+     * user betting input, round dealing, player/dealer turns, and file saving.
+     *
+     * @param args Command-line arguments (not used).
+     */
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
         Deck deck = new Deck();
@@ -134,13 +144,21 @@ public class Blackjack {
         scanner.close();
     }
 
+    /**
+     * Represents a single playing card with a rank and a suit.
+     */
     // CARD CLASS - AI
     public static class Card {
 
+        /**
+         * The four standard playing card suits:
+         * Clubs (C), Diamonds (D), Hearts (H), and Spades (S).
+         */
         public enum Suit {
             C, D, H, S
         }
 
+        /** All valid card ranks from Ace (1) through King (13). */
         public static int[] numbers = {
             1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
         };
@@ -148,34 +166,64 @@ public class Blackjack {
         private final int rank;
         private final Suit suit;
 
+        /**
+         * Constructs a new Card with the specified rank and suit.
+         *
+         * @param rank The numerical rank of the card (1–13).
+         * @param suit The suit of the card.
+         */
         public Card(int rank, Suit suit) {
             this.rank = rank;
             this.suit = suit;
         }
 
+        /**
+         * Gets the numerical rank of the card.
+         *
+         * @return The rank (1–13).
+         */
         public int getRank() {
             return rank;
         }
 
+        /**
+         * Gets the suit of the card.
+         *
+         * @return The card's Suit.
+         */
         public Suit getSuit() {
             return suit;
         }
 
+        /**
+         * Returns a compact string representation of the card (e.g., "H10").
+         *
+         * @return The suit followed by the rank.
+         */
         @Override
         public String toString() {
             return suit + "" + rank;
         }
     }
 
+    /**
+     * Represents a standard 52-card deck that can be reset, shuffled, and drawn from.
+     */
     // DECK CLASS
     public static class Deck {
 
         private final List<Card> cards = new ArrayList<>();
 
+        /**
+         * Constructs a new Deck populated with all 52 cards.
+         */
         public Deck() {
             reset();
         }
 
+        /**
+         * Clears the deck and repopulates it with all 52 unique suit-and-rank combinations.
+         */
         public void reset() {
             cards.clear();
 
@@ -186,15 +234,29 @@ public class Blackjack {
             }
         }
 
+        /**
+         * Adds a single card to the deck.
+         *
+         * @param card The Card object to add.
+         * @return true once the card has been added.
+         */
         public boolean addCard(Card card) {
             cards.add(card);
             return true;
         }
 
+        /**
+         * Randomizes the order of the cards remaining in the deck.
+         */
         public void shuffle() {
             Collections.shuffle(cards);
         }
 
+        /**
+         * Removes and returns the top card from the deck.
+         *
+         * @return The drawn Card, or null if the deck is empty.
+         */
         public Card drawCard() {
             if (cards.isEmpty()) {
                 return null;
@@ -204,56 +266,114 @@ public class Blackjack {
         }
     }
 
+    /**
+     * Represents a Blackjack player, tracking their hand, score, betting balance,
+     * and cumulative game statistics.
+     */
     // Player class
     public static class Player {
         private final String name;
         private final List<Card> hand = new ArrayList<>();
 
+        /**
+         * Constructs a new Player with the given name.
+         *
+         * @param name The display name of the player.
+         */
         public Player(String name) {
             this.name = name;
         }
 
+        /**
+         * Gets the player's name.
+         *
+         * @return The player's name.
+         */
         public String getName() {
             return name;
         }
 
+        /**
+         * Adds a drawn card to the player's current hand.
+         *
+         * @param card The Card to add.
+         */
         public void addCard(Card card) {
             hand.add(card);
         }
 
+        /**
+         * Gets the list of cards currently held by the player.
+         *
+         * @return A List of Card objects in the player's hand.
+         */
         public List<Card> getHand() {
             return hand;
         }
 
-        // Betting (Money)
+        /** Current monetary balance available for betting. */
         public double balance = 100.00;
+        /** Cumulative counts of wins, losses, and pushes. */
         public int wins = 0, losses = 0, pushes = 0; // AI
+        /** Cumulative net money won or lost across sessions. */
         public double net = 0; // AI
 
+        /**
+         * Gets the player's current balance.
+         *
+         * @return The current balance.
+         */
         public double getBalance() {
             return balance;
         }
 
+        /**
+         * Sets the player's balance to a specific amount.
+         *
+         * @param balance The new balance value.
+         */
         public void setBalance(double balance) {
             this.balance = balance;
         }
 
+        /**
+         * Records a win by increasing the balance and net earnings, and incrementing wins.
+         *
+         * @param amount The amount won.
+         */
         public void win(double amount) {
             this.balance += amount;
             this.net += amount; // AI
             this.wins++; // AI
         }
 
+        /**
+         * Records a loss by decreasing the balance and net earnings, and incrementing losses.
+         *
+         * @param amount The amount lost.
+         */
         public void lose(double amount) {
             this.balance -= amount;
             this.net -= amount; // AI
             this.losses++; // AI
         }
 
+        /**
+         * Checks whether the player has enough balance to cover a given bet.
+         *
+         * @param amount The wager amount to check.
+         * @return true if the balance is greater than or equal to the amount; false otherwise.
+         */
         public boolean hasEnoughBalance(double amount) {
             return this.balance >= amount;
         }
 
+        /**
+         * Deducts a bet amount from the player's balance if funds are sufficient.
+         *
+         * @param betAmount The amount to wager.
+         * @return The wagered bet amount.
+         */
         public double bet(double betAmount) {
             if (hasEnoughBalance(betAmount)) {
                 this.balance -= betAmount;
@@ -263,14 +383,28 @@ public class Blackjack {
             return betAmount;
         }
 
+        /**
+         * Removes all cards from the player's hand at the start of a new round.
+         */
         public void clearHand() {
             hand.clear();
         }
 
+        /**
+         * Gets the number of cards currently in the player's hand.
+         *
+         * @return The card count in the hand.
+         */
         public int getHandSize() {
             return hand.size();
         }
 
+        /**
+         * Calculates the optimal Blackjack score of the player's hand,
+         * counting face cards as 10 and Aces as 11 or 1 to avoid busting.
+         *
+         * @return The total point value of the hand.
+         */
         public int getHandValue() {
             int value = 0;
             int aces = 0;
@@ -292,14 +426,27 @@ public class Blackjack {
             return value;
         }
 
+        /**
+         * Determines whether the player's hand value exceeds 21.
+         *
+         * @return true if the hand value is over 21; false otherwise.
+         */
         public boolean isBust() {
             return getHandValue() > 21;
         }
 
+        /**
+         * Determines whether the player was dealt a natural Blackjack (21 with 2 cards).
+         *
+         * @return true if the hand has 2 cards totaling 21; false otherwise.
+         */
         public boolean isBlackjack() {
             return getHandSize() == 2 && getHandValue() == 21;
         }
 
+        /**
+         * Saves the current balance and game statistics to "save.txt".
+         */
         // AI
         public void save() {
             try {
@@ -309,6 +456,10 @@ public class Blackjack {
             } catch (Exception e) {}
         }
 
+        /**
+         * Loads the saved balance and game statistics from "save.txt" if available.
+         * Resets balance to $100.00 if the saved balance was depleted.
+         */
         public void load() {
             try {
                 Scanner in = new Scanner(new File("save.txt"));
@@ -322,6 +473,10 @@ public class Blackjack {
             } catch (Exception e) {}
         }
 
+        /**
+         * Writes a formatted summary of total games, win/loss/push counts,
+         * net monetary result, and win percentage to "stats.txt".
+         */
         public void writeStats() {
             try {
                 int total = wins + losses + pushes;
@@ -336,13 +491,25 @@ public class Blackjack {
         }
     }
 
+    /**
+     * Represents the Blackjack dealer, inheriting hand management from Player
+     * and automating the dealer's drawing rules.
+     */
     // Dealer subclass
     public static class Dealer extends Player {
 
+        /**
+         * Constructs a new Dealer named "Dealer".
+         */
         public Dealer() {
             super("Dealer");
         }
 
+        /**
+         * Executes the dealer's turn by drawing cards until the hand value reaches at least 17.
+         *
+         * @param deck The Deck from which to draw cards.
+         */
         public void playTurn(Deck deck) {
             while (getHandValue() < 17) {
                 addCard(deck.drawCard());
