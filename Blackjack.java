@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.Collections; //Used to shuffle list
 import java.util.List;
 import java.util.Scanner;
+import java.io.File;
+import java.io.PrintWriter;
 
 public class Blackjack {
 
@@ -16,28 +18,31 @@ public class Blackjack {
         Deck deck = new Deck();
 
         Player player = new Player("Player");
-        Player dealer = new Player("Dealer");
+        Dealer dealer = new Dealer();
+        player.load(); // AI
 
         System.out.println("Welcome to Blackjack!");
 
         while (player.getBalance() > 0) {
-            System.out.print("\nCurrent Balance: "+ player.getBalance() + "\n");
-            System.out.print("Enter your bet or enter 0 to quit: ");
+            double betAmount = 0;
+            System.out.println("Current Balance: " + player.getBalance());
+            System.out.println("Enter your bet or enter 0 to quit: ");
 
-            if (!scanner.hasNextDouble()) {
+            try {
+                betAmount = scanner.nextDouble();
+            } catch (Exception e) {
                 System.out.println("Please enter a valid number.");
                 scanner.next();
                 continue;
             }
 
-            double betAmount = scanner.nextDouble();
-            if (betAmount == 0) {
+            if (betAmount == 0) { // Quit game
                 break;
             }
             if (betAmount < 0 || !player.hasEnoughBalance(betAmount)) {
                 System.out.println("Invalid bet! You only have $" + player.getBalance());
                 continue;
-            } 
+            }
 
             // Prepare round
             deck.reset();
@@ -59,7 +64,8 @@ public class Blackjack {
                 System.out.println("Dealer's hand: " + dealer.getHand() + " (Value: " + dealer.getHandValue() + ")");
                 if (player.isBlackjack() && dealer.isBlackjack()) {
                     System.out.println("Both have Blackjack! Push (bet returned).");
-                    
+                    player.pushes++;
+
                 } else if (player.isBlackjack()) {
                     System.out.print("Blackjack! You win " + betAmount * 1.5 + "!\n");
                     player.win(betAmount * 1.5);
@@ -67,7 +73,6 @@ public class Blackjack {
                 } else {
                     System.out.println("Dealer has Blackjack! You lose.");
                     player.lose(betAmount);
-
                 }
                 continue;
             }
@@ -86,7 +91,6 @@ public class Blackjack {
 
                 } else {
                     System.out.println("Invalid choice. Type 'h' or 's'.");
-
                 }
             }
 
@@ -97,10 +101,7 @@ public class Blackjack {
 
             } else {
                 // Dealer hits until 17 or higher
-                while (dealer.getHandValue() < 17) {
-                    dealer.addCard(deck.drawCard());
-
-                }
+                dealer.playTurn(deck);
 
                 System.out.println("\nDealer's final hand: " + dealer.getHand() + " (Value: " + dealer.getHandValue() + ")");
 
@@ -108,32 +109,32 @@ public class Blackjack {
                 int dealerScore = dealer.getHandValue();
 
                 if (dealer.isBust() || playerScore > dealerScore || playerScore == 21) {
-                    System.out.print("You win $" + betAmount);
+                    System.out.print("You win $" + betAmount + "\n");
                     player.win(betAmount);
 
                 } else if (playerScore == dealerScore) {
                     System.out.println("Push! Your bet is returned.");
+                    player.pushes++;
 
                 } else {
                     System.out.print("Dealer wins! You lost " + betAmount + "\n");
                     player.lose(betAmount);
-
                 }
             }
         }
 
         if (player.getBalance() <= 0) {
             System.out.println("ざーこ");
-
         } else {
-            System.out.print("You ended with $" + player.getBalance());
-            
+            System.out.println("You ended with $" + player.getBalance());
         }
 
+        player.save(); // AI
+        player.writeStats(); // AI
         scanner.close();
     }
 
-    // CARD CLASS   -   AI 
+    // CARD CLASS - AI
     public static class Card {
 
         public enum Suit {
@@ -225,7 +226,10 @@ public class Blackjack {
         }
 
         // Betting (Money)
-        public double balance = 100.00; 
+        public double balance = 100.00;
+        public int wins = 0, losses = 0, pushes = 0; // AI
+        public double net = 0; // AI
+
         public double getBalance() {
             return balance;
         }
@@ -233,12 +237,17 @@ public class Blackjack {
         public void setBalance(double balance) {
             this.balance = balance;
         }
+
         public void win(double amount) {
             this.balance += amount;
+            this.net += amount; // AI
+            this.wins++; // AI
         }
 
         public void lose(double amount) {
             this.balance -= amount;
+            this.net -= amount; // AI
+            this.losses++; // AI
         }
 
         public boolean hasEnoughBalance(double amount) {
@@ -262,7 +271,6 @@ public class Blackjack {
             return hand.size();
         }
 
-
         public int getHandValue() {
             int value = 0;
             int aces = 0;
@@ -282,17 +290,63 @@ public class Blackjack {
                 aces--;
             }
             return value;
-
         }
 
         public boolean isBust() {
             return getHandValue() > 21;
-        }   
+        }
+
         public boolean isBlackjack() {
             return getHandSize() == 2 && getHandValue() == 21;
         }
 
+        // AI
+        public void save() {
+            try {
+                PrintWriter out = new PrintWriter("save.txt");
+                out.println(balance + " " + wins + " " + losses + " " + pushes + " " + net);
+                out.close();
+            } catch (Exception e) {}
+        }
 
-        
+        public void load() {
+            try {
+                Scanner in = new Scanner(new File("save.txt"));
+                balance = in.nextDouble();
+                wins = in.nextInt();
+                losses = in.nextInt();
+                pushes = in.nextInt();
+                net = in.nextDouble();
+                in.close();
+                if (balance <= 0) balance = 100.00;
+            } catch (Exception e) {}
+        }
+
+        public void writeStats() {
+            try {
+                int total = wins + losses + pushes;
+                double winRate = (total > 0) ? (wins * 100.0 / total) : 0;
+                PrintWriter out = new PrintWriter("stats.txt");
+                out.println("Total Games: " + total);
+                out.println("Wins: " + wins + " | Losses: " + losses + " | Pushes: " + pushes);
+                out.println("Net Result: $" + net);
+                out.println("Win Rate: " + winRate + "%");
+                out.close();
+            } catch (Exception e) {}
+        }
+    }
+
+    // Dealer subclass
+    public static class Dealer extends Player {
+
+        public Dealer() {
+            super("Dealer");
+        }
+
+        public void playTurn(Deck deck) {
+            while (getHandValue() < 17) {
+                addCard(deck.drawCard());
+            }
+        }
     }
 }
