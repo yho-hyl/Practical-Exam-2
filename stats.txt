@@ -1,4 +1,4 @@
-Total Games: 10
-Wins: 4 | Losses: 6 | Pushes: 0
-Net Result: $-600.0
-Win Rate: 40.0%
+Total Games: 15
+Wins: 5 | Losses: 10 | Pushes: 0
+Net Result: $-1000.0
+Win Rate: 33.333333333333336%
