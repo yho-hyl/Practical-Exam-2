@@ -24,7 +24,7 @@ public class Blackjack {
      * @param args Command-line arguments (not used).
      */
     public static void main(String[] args) {
-        Scanner scanner = new Scanner(System.in);
+        Scanner input = new Scanner(System.in);
         Deck deck = new Deck();
 
         Player player = new Player("Player");
@@ -39,10 +39,10 @@ public class Blackjack {
             System.out.println("Enter your bet or enter 0 to quit: ");
 
             try {
-                betAmount = scanner.nextDouble();
+                betAmount = input.nextDouble();
             } catch (Exception e) {
                 System.out.println("Please enter a valid number.");
-                scanner.next();
+                input.nextInt();
                 continue;
             }
 
@@ -54,7 +54,7 @@ public class Blackjack {
                 continue;
             }
 
-            // Prepare round
+            // Prepare game
             deck.reset();
             deck.shuffle();
             player.clearHand();
@@ -66,6 +66,7 @@ public class Blackjack {
             player.addCard(deck.drawCard());
             dealer.addCard(deck.drawCard());
 
+            //AI - Had AI format the print output
             System.out.println("\nDealer shows: [" + dealer.getHand().get(0) + ", ?]");
             System.out.println("Your hand: " + player.getHand() + " (Value: " + player.getHandValue() + ")");
 
@@ -77,7 +78,7 @@ public class Blackjack {
                     player.pushes++;
 
                 } else if (player.isBlackjack()) {
-                    System.out.print("Blackjack! You win " + betAmount * 1.5 + "!\n");
+                    System.out.println("Blackjack! You win " + betAmount * 1.5 + "!");
                     player.win(betAmount * 1.5);
 
                 } else {
@@ -90,7 +91,7 @@ public class Blackjack {
             // Player's turn
             while (!player.isBust()) {
                 System.out.print("Hit or Stand? (h/s): ");
-                String choice = scanner.next().trim().toLowerCase();
+                String choice = input.next().trim().toLowerCase();
 
                 if (choice.equals("h")) {
                     player.addCard(deck.drawCard());
@@ -139,9 +140,9 @@ public class Blackjack {
             System.out.println("You ended with $" + player.getBalance());
         }
 
-        player.save(); // AI
+        player.save(); 
         player.writeStats(); // AI
-        scanner.close();
+        input.close();
     }
 
     /**
@@ -206,10 +207,11 @@ public class Blackjack {
         }
     }
 
+
+    
     /**
      * Represents a standard 52-card deck that can be reset, shuffled, and drawn from.
      */
-    // DECK CLASS
     public static class Deck {
 
         private final List<Card> cards = new ArrayList<>();
@@ -224,12 +226,19 @@ public class Blackjack {
         /**
          * Clears the deck and repopulates it with all 52 unique suit-and-rank combinations.
          */
-        public void reset() {
+        public void reset() {        
             cards.clear();
 
-            for (Card.Suit suit : Card.Suit.values()) {
-                for (int rank : Card.numbers) {
-                    addCard(new Card(rank, suit));
+            Card.Suit[] allSuits = Card.Suit.values();
+            int[] allNumbers = Card.numbers;
+
+            for (int i = 0; i < allSuits.length; i++) {
+                for (int j = 0; j < allNumbers.length; j++) {
+                    Card.Suit currentSuit = allSuits[i];
+                    int currentRank = allNumbers[j];
+
+                    Card newCard = new Card(currentRank, currentSuit);
+                    addCard(newCard);
                 }
             }
         }
@@ -270,7 +279,6 @@ public class Blackjack {
      * Represents a Blackjack player, tracking their hand, score, betting balance,
      * and cumulative game statistics.
      */
-    // Player class
     public static class Player {
         private final String name;
         private final List<Card> hand = new ArrayList<>();
@@ -313,10 +321,10 @@ public class Blackjack {
 
         /** Current monetary balance available for betting. */
         public double balance = 100.00;
-        /** Cumulative counts of wins, losses, and pushes. */
-        public int wins = 0, losses = 0, pushes = 0; // AI
-        /** Cumulative net money won or lost across sessions. */
-        public double net = 0; // AI
+        public int wins = 0;
+        public int losses = 0;
+        public int pushes = 0;
+        public double net = 0;
 
         /**
          * Gets the player's current balance.
@@ -343,8 +351,8 @@ public class Blackjack {
          */
         public void win(double amount) {
             this.balance += amount;
-            this.net += amount; // AI
-            this.wins++; // AI
+            this.net += amount;
+            this.wins++;
         }
 
         /**
@@ -354,8 +362,8 @@ public class Blackjack {
          */
         public void lose(double amount) {
             this.balance -= amount;
-            this.net -= amount; // AI
-            this.losses++; // AI
+            this.net -= amount; 
+            this.losses++; 
         }
 
         /**
@@ -400,16 +408,18 @@ public class Blackjack {
         }
 
         /**
-         * Calculates the optimal Blackjack score of the player's hand,
-         * counting face cards as 10 and Aces as 11 or 1 to avoid busting.
+         * Calculates the optimal Blackjack score of the player's hand, counting face cards as 10 and Aces as 11 or 1 to avoid busting.
          *
          * @return The total point value of the hand.
          */
         public int getHandValue() {
             int value = 0;
             int aces = 0;
-            for (Card card : hand) {
-                int rank = card.getRank();
+
+            for (int i = 0; i < hand.size(); i++) {
+                Card currentCard = hand.get(i);
+                int rank = currentCard.getRank();
+
                 if (rank == 1) {
                     aces++;
                     value += 11;
@@ -419,13 +429,14 @@ public class Blackjack {
                     value += rank;
                 }
             }
+
             while (value > 21 && aces > 0) {
                 value -= 10;
                 aces--;
             }
             return value;
         }
-
+        
         /**
          * Determines whether the player's hand value exceeds 21.
          *
@@ -447,7 +458,6 @@ public class Blackjack {
         /**
          * Saves the current balance and game statistics to "save.txt".
          */
-        // AI
         public void save() {
             try {
                 PrintWriter out = new PrintWriter("save.txt");
@@ -457,26 +467,26 @@ public class Blackjack {
         }
 
         /**
-         * Loads the saved balance and game statistics from "save.txt" if available.
-         * Resets balance to $100.00 if the saved balance was depleted.
+         * Loads the saved balance and game statistics from "save.txt" if available. Resets balance to $100.00 if the saved balance was deleted.
          */
+        // AI - didn't know how to import data from .txt
         public void load() {
             try {
-                Scanner in = new Scanner(new File("save.txt"));
-                balance = in.nextDouble();
-                wins = in.nextInt();
-                losses = in.nextInt();
-                pushes = in.nextInt();
-                net = in.nextDouble();
-                in.close();
+                Scanner inport = new Scanner(new File("save.txt"));
+                balance = inport.nextDouble();
+                wins = inport.nextInt();
+                losses = inport.nextInt();
+                pushes = inport.nextInt();
+                net = inport.nextDouble();
+                inport.close(); //AI - I dont usually close Scanner
                 if (balance <= 0) balance = 100.00;
             } catch (Exception e) {}
         }
 
         /**
-         * Writes a formatted summary of total games, win/loss/push counts,
-         * net monetary result, and win percentage to "stats.txt".
+         * Writes a formatted summary of total games, win/loss/push counts, net monetary result, and win percentage to "stats.txt".
          */
+        // AI - I wanted to check on my average stats
         public void writeStats() {
             try {
                 int total = wins + losses + pushes;
@@ -492,10 +502,10 @@ public class Blackjack {
     }
 
     /**
-     * Represents the Blackjack dealer, inheriting hand management from Player
-     * and automating the dealer's drawing rules.
+     * Represents the Blackjack dealer, inheriting hand management from Player and automating the dealer's drawing rules.
      */
     // Dealer subclass
+    // Semi-AI Had AI help me come up with ways to use subclasses
     public static class Dealer extends Player {
 
         /**
